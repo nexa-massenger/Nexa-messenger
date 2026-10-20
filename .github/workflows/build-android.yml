@@ -1,12 +1,27 @@
-
 name: Build NEXA Android APK
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'public/**'
+      - 'server.js'
+      - 'package.json'
+      - 'capacitor.config.json'
+      - '.github/workflows/build-android.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nexa-android-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
@@ -22,21 +37,30 @@ jobs:
           distribution: temurin
           java-version: 21
 
+      - name: Check source
+        run: npm run check
+
       - name: Configure Android
         env:
           NEXA_PUBLIC_URL: ${{ vars.NEXA_PUBLIC_URL }}
         run: |
-          npm install @capacitor/core@^7 @capacitor/cli@^7 @capacitor/android@^7
+          mkdir -p public
+          npm install --no-save @capacitor/core@^7 @capacitor/cli@^7 @capacitor/android@^7
           printf 'window.NEXA_API_BASE = "%s";\n' "$NEXA_PUBLIC_URL" > public/native-config.js
-          printf '{"appId":"com.nexa.messenger","appName":"NEXA Messenger","webDir":"public"}' > capacitor.config.json
+          printf '{"appId":"com.nexa.messenger","appName":"NEXA Social","webDir":"public"}' > capacitor.config.json
           npx cap add android
           npx cap sync android
 
       - name: Build APK
-        run: cd android && chmod +x gradlew && ./gradlew assembleDebug
+        run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+
+      - name: Verify APK exists
+        run: test -s android/app/build/outputs/apk/debug/app-debug.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: nexa-messenger-android-debug
+          name: nexa-social-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
