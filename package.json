@@ -1,0 +1,9 @@
+{
+  "name": "nexa-messenger",
+  "version": "1.0.0",
+  "private": true,
+  "description": "NEXA Messenger Android wrapper build dependencies",
+  "scripts": {
+    "check": "node --check server.js && node --check public/app.js && node --check public/native-config.js"
+  }
+}

@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: nexa-messenger
+    runtime: docker
+    region: singapore
+    plan: starter
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: DATA_DIR
+        value: /app/data
+      - key: ALLOWED_ORIGINS
+        value: https://localhost,capacitor://localhost
+    disk:
+      name: nexa-data
+      mountPath: /app/data
+      sizeGB: 1
