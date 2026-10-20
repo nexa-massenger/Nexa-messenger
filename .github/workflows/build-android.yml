@@ -1,0 +1,42 @@
+
+name: Build NEXA Android APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Configure Android
+        env:
+          NEXA_PUBLIC_URL: ${{ vars.NEXA_PUBLIC_URL }}
+        run: |
+          npm install @capacitor/core@^7 @capacitor/cli@^7 @capacitor/android@^7
+          printf 'window.NEXA_API_BASE = "%s";\n' "$NEXA_PUBLIC_URL" > public/native-config.js
+          printf '{"appId":"com.nexa.messenger","appName":"NEXA Messenger","webDir":"public"}' > capacitor.config.json
+          npx cap add android
+          npx cap sync android
+
+      - name: Build APK
+        run: cd android && chmod +x gradlew && ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: nexa-messenger-android-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
